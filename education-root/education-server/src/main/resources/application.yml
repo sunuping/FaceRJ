@@ -1,0 +1,46 @@
+#config server
+server:
+  port: 443
+  httpport: 8888
+  session-timeout: 30
+  ssl:
+    enabled: true
+    key-store: classpath:2717241_sunuping.com.pfx
+    key-store-password: 941Kl6ri
+    key-store-type: PKCS12
+    key-alias: alias
+  tomcat:
+    uri-encoding: UTF-8
+  connection-timeout: 180000
+
+#config custom info
+upload-path: /janly/upload/
+
+#config devtools
+spring:
+  devtools:
+    add-properties: true
+    restart:
+      enabled: true
+  thymeleaf:
+    cache: false
+
+  #config multipart file
+  servlet:
+    multipart:
+      max-file-size: 1048576000
+      max-request-size: 1048576000
+      enabled: true
+  #config resources
+  resources:
+    static-locations: classpath:/resources/,classpath:/static/,file:${upload-path}
+
+  #config log
+logging:
+  level:
+    root: info
+    web: info
+  file: clcs-server.log
+
+
+

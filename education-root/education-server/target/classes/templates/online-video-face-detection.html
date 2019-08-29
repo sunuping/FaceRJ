@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!-- 使页面适配手机屏幕 -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title></title>
+
+</head>
+
+<body>
+<!-- 这里是通过点击某个Div来隐式创建一个 input 控件，然后实现直接访问相机的功能。-->
+<!--<div id="demoForClick">-->
+<!--<div id="btnID">这里是直接获取iOS相机功能</div>-->
+<!--</div>-->
+<!-- 换行 -->
+<!--<br/><br/><br/>-->
+<!--<div>-->
+<!--&lt;!&ndash; 直接访问相机功能进行拍照 &ndash;&gt;-->
+<!--<label>照相机</label>-->
+<!--<input type="file" id='image' accept="image/*" capture='camera'>-->
+<!--</div>-->
+<!-- 换行 -->
+<!--<br/><br/><br/>-->
+<div>
+    <!-- 直接唤起摄像头进行录像 -->
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <label>录像</label>
+        <progress id="progressBar" value="0" max="100" style="width: 300px;"></progress>
+        <span id="percentage"></span><span id="time"></span>
+        <br /><br />
+        <input type="file" id='video' accept="video/*" capture='camcorder'>
+        <input type="button" onclick="cancleUploadFile()" value="取消" />
+    </form>
+
+    <div id="face_liveness"></div>
+    <div id="face_probability"></div>
+    <div id="age"></div>
+    <div id="beauty"></div>
+    <div id="expression"></div>
+    <div id="type"></div>
+</div>
+<!-- 换行 -->
+<!--<br/><br/><br/>-->
+<script src="https://cdn.bootcss.com/jquery/1.11.0/jquery.min.js"></script>
+<script src="js/json2.js"></script>
+<script>
+    // let video = document.getElementById("video");
+    // // 隐式创建一个input控件，然后实现直接访问相册
+    // let inputUploadObj = '';
+    // $("#btnID").on("click", function() {
+    //     inputUploadObj = document.createElement('input')
+    //     inputUploadObj.setAttribute('id', 'input_upload_ID');
+    //     inputUploadObj.setAttribute('type', 'file');
+    //     // 添加这个属性，就可以唤起相机的功能
+    //     inputUploadObj.setAttribute('capture', 'camera');
+    //     // 这里如果不加属性 accept 是 "image/*" 或者 "video/*"，就默认打开摄像头，既可以拍照也可以录像
+    //     inputUploadObj.setAttribute('accept', 'image/*');
+    //     inputUploadObj.setAttribute("style", 'visibility:hidden');
+    //     // 这里将创建的隐式input控件拼接到body的最后面，会增加页面的长度，所以要在适当的时候，移除掉这个隐式创建的input控件
+    //     document.body.appendChild(inputUploadObj);
+    //     // 这里是模拟点击了input控件
+    //     inputUploadObj.click();
+    // });
+    //
+    let xhr;
+    let ot;//
+    let oloaded;
+    $("#video").change(function () {
+        let file = video.files[0];
+        let form = new FormData();
+        form.append("file", file);
+        xhr = new XMLHttpRequest();
+        xhr.open("post", "[[@{onlineVideoFaceDetectionData}]]", true);
+        xhr.upload.onprogress = progressFunction;//【上传进度调用方法实现】
+        xhr.upload.onloadstart = function(){//上传开始执行方法
+            ot = new Date().getTime();   //设置上传开始时间
+            oloaded = 0;//设置上传开始时，以上传的文件大小为0
+        };
+        xhr.onreadystatechange = function (ev) {
+            let res = xhr.responseText;
+            res = JSON.parse(res);
+            if (res.result == null) {
+                $("#face_liveness").text("活体分数值：不是活体");
+            } else {
+                $("#face_liveness").text("活体分数值：" + res.result.face_liveness);
+                $("#face_probability").text("人脸置信度：" + res.result.face_list[0].face_probability);
+                $("#age").text("年龄：" + res.result.face_list[0].age);
+                $("#beauty").text("美丑打分：" + res.result.face_list[0].beauty);
+                $("#expression").text("表情：" + res.result.face_list[0].expression);
+                $("#gender").text("性别：" + res.result.face_list[0].gender.type);
+            }
+        };
+        xhr.send(form);
+
+    });
+    //上传进度实现方法，上传过程中会频繁调用该方法
+    function progressFunction(evt) {
+
+        let progressBar = document.getElementById("progressBar");
+        let percentageDiv = document.getElementById("percentage");
+        // event.total是需要传输的总字节，event.loaded是已经传输的字节。如果event.lengthComputable不为真，则event.total等于0
+        if (evt.lengthComputable) {//
+            progressBar.max = evt.total;
+            progressBar.value = evt.loaded;
+            percentageDiv.innerHTML = Math.round(evt.loaded / evt.total * 100) + "%";
+        }
+
+        let time = document.getElementById("time");
+        let nt = new Date().getTime();//获取当前时间
+        let pertime = (nt-ot)/1000; //计算出上次调用该方法时到现在的时间差，单位为s
+        ot = new Date().getTime(); //重新赋值时间，用于下次计算
+
+        let perload = evt.loaded - oloaded; //计算该分段上传的文件大小，单位b
+        oloaded = evt.loaded;//重新赋值已上传文件大小，用以下次计算
+
+        //上传速度计算
+        let speed = perload/pertime;//单位b/s
+        let bspeed = speed;
+        let units = 'b/s';//单位名称
+        if(speed/1024>1){
+            speed = speed/1024;
+            units = 'k/s';
+        }
+        if(speed/1024>1){
+            speed = speed/1024;
+            units = 'M/s';
+        }
+        speed = speed.toFixed(1);
+        //剩余时间
+        let resttime = ((evt.total-evt.loaded)/bspeed).toFixed(1);
+        time.innerHTML = '，速度：'+speed+units+'，剩余时间：'+resttime+'s';
+        if(bspeed==0)
+            time.innerHTML = '上传已取消';
+    }
+    //上传成功响应
+    function uploadComplete(evt) {
+        //服务断接收完文件返回的结果
+        //    alert(evt.target.responseText);
+        alert("上传成功！");
+    }
+    //上传失败
+    function uploadFailed(evt) {
+        alert("上传失败！");
+    }
+    //取消上传
+    function cancleUploadFile(){
+        xhr.abort();
+    }
+</script>
+</body>
+</html>

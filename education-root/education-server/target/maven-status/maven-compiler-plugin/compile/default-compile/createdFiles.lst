@@ -1,0 +1,4 @@
+com\sunup\education\EducationApplication$1.class
+com\sunup\education\EducationApplication.class
+com\sunup\education\controller\wechat\LiveDetectionController.class
+com\sunup\education\service\i\IFaceService.class

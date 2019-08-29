@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0,viewport-fit=cover">
+    <title>..</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/weui/1.1.3/style/weui.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/jquery-weui/1.2.1/css/jquery-weui.min.css">
+</head>
+<body ontouchstart>
+<!--
+客观的情况下，下面这些元素已经得到了各大浏览器厂商的支持，
+客户端支持视频/摄像机，为了证明
+所涉及的元素，它们是用hmtl标签(而不是JavaScript)创建的
+-->
+<video id="video" width="100" height="100" autoplay></video>
+<canvas id="canvas" width="100" height="100" style="display: none"></canvas>
+<div id="face_liveness"></div>
+<div id="face_probability"></div>
+<div id="age"></div>
+<div id="beauty"></div>
+<div id="expression"></div>
+<div id="type"></div>
+
+<script type="text/javascript">
+    let video = document.getElementById('video');
+    // 得到摄像头api
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // 如果我们想要立即显示拍照，请设置 { video: true }
+        navigator.mediaDevices.getUserMedia({video: true}).then(
+            function (stream) {
+                //video.src = window.URL.createObjectURL(stream);
+                video.srcObject = stream;
+                video.play();
+            });
+    }else{
+        alert("未能获取");
+    }
+
+    // 用于拍摄快照的元素,添加canvas里面
+    let canvas = document.getElementById('canvas');
+    let context = canvas.getContext('2d');
+    let img = "";
+    setInterval(function () {
+        context.drawImage(video, 0, 0, 100, 100);
+        img = canvas.toDataURL().substring("data:image/png;base64,".length);
+        $.post("[[@{faceRecognitionData}]]", {"img_base64": img}, function (res) {
+            if (res.result==null){
+                $("#face_liveness").text("活体分数值：不是活体");
+            } else{
+                $("#face_liveness").text("活体分数值："+res.result.face_liveness);
+                $("#face_probability").text("人脸置信度："+res.result.face_list[0].face_probability);
+                $("#age").text("年龄："+res.result.face_list[0].age);
+                $("#beauty").text("美丑打分："+res.result.face_list[0].beauty);
+                $("#expression").text("表情："+res.result.face_list[0].expression);
+                $("#gender").text("性别："+res.result.face_list[0].gender.type);
+            }
+
+        });
+    }, 500);
+
+</script>
+<script src="https://cdn.bootcss.com/jquery/1.11.0/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery-weui/1.2.1/js/jquery-weui.min.js"></script>
+<script src="https://res2.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+</body>
+</html>
